@@ -10,8 +10,10 @@ export async function POST(
     const body = await request.json();
     const {
       message,
-      image,
-      conversationId
+      file,
+      fileType,
+      conversationId,
+      isForwarded
     } = body;
 
     // If user is not logged in, return unauthorized
@@ -23,7 +25,9 @@ export async function POST(
     const newMessage = await prisma.message.create({
       data: {
         body: message,
-        image: image,
+        file: file,
+        fileType,
+        isForwarded: !!isForwarded,
         conversation: {
           connect: { id: conversationId }
         },

@@ -15,7 +15,12 @@ let onlineUsers = [];
 app.prepare().then(() => {
   const httpServer = createServer(handler);
 
-  const io = new Server(httpServer);
+  const io = new Server(httpServer, {
+  cors: {
+    origin: "*", // Replace with allowed origin
+    methods: ["GET", "POST"]
+  }
+});
 
   io.on("connection", (socket) => {
     console.log(`User connected ${socket.id}`);
@@ -39,6 +44,30 @@ app.prepare().then(() => {
     socket.on('leave_room',(conversationId) => {
         console.log(`User left room ${conversationId}`);
         socket.leave(conversationId); // Leave the user from a socket room
+    });
+
+    socket.on("send_friend_request", (data) => {
+        console.log(`Friend request from ${data.sender.email} to ${data.receiver.email}`);
+        
+        if (data.status === 'pending') {
+            io.emit("new_friend_request", data);
+        }
+        else if (data.status === "accepted") io.emit("new_user", data);
+    });
+
+    socket.on('accept_friend_request', (data) => {
+        console.log(`${data.receiver.email} accepted ${data.sender.email}'s request.`);
+        io.emit("new_user", data); //meant for the sender
+    });
+
+    socket.on('reject_friend_request', (data) => {
+        console.log(`${data.receiver.email} received ${data.sender.email}'s request.`);
+        io.emit("rejected_friend_request", data);
+    });
+
+    socket.on('cancel_friend_request', (data) => {
+        console.log(`${data.sender.email} cancelled request to ${data.receiver.email}`);
+        io.emit("cancelled_friend_request", data);
     });
 
     socket.on('send_message', (message) => {
